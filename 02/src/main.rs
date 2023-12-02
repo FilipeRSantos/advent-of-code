@@ -121,9 +121,13 @@ fn main() -> Result<(), std::io::Error> {
     let values = input
         .lines()
         .map(|line| line.parse::<Game>().expect("Call the engineers"))
-        .filter(|game| game.get_max_draw(Color::Blue) <= 14)
-        .filter(|game| game.get_max_draw(Color::Green) <= 13)
-        .filter(|game| game.get_max_draw(Color::Red) <= 12)
+        .map(|game| {
+            let blue = game.get_max_draw(Color::Blue);
+            let green = game.get_max_draw(Color::Green);
+            let red = game.get_max_draw(Color::Red);
+
+            return blue * green * red
+        })
         .collect::<Vec<_>>();
 
     let total: u32 = values.into_iter().sum();
