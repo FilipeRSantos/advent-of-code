@@ -1,22 +1,29 @@
 use std::str::FromStr;
-use crate::Section::{Numeric, Symbol};
+use crate::Section::{Numeric, Gear};
 
 #[derive(Debug, PartialEq)]
 enum Section {
     Numeric { value: u32, start_at: usize, end_at: usize },
-    Symbol { position: usize },
+    Gear { position: usize },
 }
 
 impl Section {
-    fn get_part_number(&self, symbols: &Vec<usize>) -> u32 {
+    fn get_gear_ratio(&self, parts: Vec<&Section>) -> u32 {
         match *self {
-            Numeric{ value, start_at, end_at } =>
-                if symbols.iter().any(|s| *s >= if start_at == 0 { 0 } else {start_at - 1} && *s <= end_at) {
-                    value
-                } else {
-                    0
-                }
-            ,
+            Gear{ position } => {
+                let mut close_parts = parts
+                    .iter()
+                    .filter_map(|e| match e {
+                        Numeric { value, start_at, end_at } => {
+                            if position >= if *start_at == 0 { 0 } else {start_at - 1} && position <= *end_at { Some(*value) } else { None }
+                        },
+                        _ => None,
+                    });
+
+                if close_parts.clone().count() == 2 {
+                    close_parts.next().unwrap() * close_parts.next().unwrap()
+                } else { 0 }
+            },
             _ => 0,
         }
     }
@@ -28,11 +35,11 @@ struct Line {
 }
 
 impl Line {
-    fn get_symbol_positions(&self) -> Vec<usize> {
+    fn get_parts(&self) -> Vec<&Section> {
         self.sections
             .iter()
             .filter_map(|e| match e {
-                Symbol { position} => Some(*position),
+                Numeric { .. } => Some(e),
                 _ => None,
             })
             .collect()
@@ -41,12 +48,7 @@ impl Line {
 
 fn check_ongoing_number(start_position_current_number: Option<usize>, sections: &mut Vec::<Section>, index: usize, s: &str) {
     if start_position_current_number.is_some() {
-        let temp = &s[start_position_current_number.unwrap()..index];
-        let even_more_temp = temp.parse::<u32>().expect("");
-
-        println!("{:?} - {:?}", temp, even_more_temp);
-
-        sections.push(Numeric { value: even_more_temp, start_at: start_position_current_number.unwrap(), end_at: index })
+        sections.push(Numeric { value: s[start_position_current_number.unwrap()..index].parse::<u32>().expect(""), start_at: start_position_current_number.unwrap(), end_at: index })
     }
 }
 
@@ -68,8 +70,8 @@ impl FromStr for Line {
             } else {
                 check_ongoing_number(start_position_current_number, &mut sections, index, s);
 
-                if c != '.' {
-                    sections.push(Section::Symbol { position: index });
+                if c == '*' {
+                    sections.push(Section::Gear { position: index });
                 }
 
                 start_position_current_number = None;
@@ -97,14 +99,14 @@ fn main() -> Result<(), std::io::Error> {
     let mut index = 0;
     let sum: u32 = lines.iter()
         .map(|line| {
-            let mut symbols = line.get_symbol_positions();
+            let mut parts = line.get_parts();
 
             if index > 0 {
-                symbols.append(&mut lines.get(index - 1).unwrap().get_symbol_positions());
+                parts.append(&mut lines.get(index - 1).unwrap().get_parts());
             }
 
             if index+1 < lines.len() {
-                symbols.append(&mut lines.get(index + 1).unwrap().get_symbol_positions());
+                parts.append(&mut lines.get(index + 1).unwrap().get_parts());
             }
 
             index += 1;
@@ -112,7 +114,7 @@ fn main() -> Result<(), std::io::Error> {
             line.sections
                 .iter()
                 .filter_map(|e| match e {
-                    Numeric { .. } => Some(e.get_part_number(&symbols)),
+                    Gear { .. } => Some(e.get_gear_ratio(parts.clone())),
                     _ => None,
                 })
                 .sum::<u32>()
