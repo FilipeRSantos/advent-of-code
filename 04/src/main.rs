@@ -67,10 +67,8 @@ fn main() -> Result<(), std::io::Error> {
             let right_picks = card.get_winning_numbers().iter().count() as u32;
             let cards = multiplier.get(&card.id).unwrap_or(&0) + 1;
 
-            (1..=cards).for_each(|_| {
-                (card.id+1..=card.id+right_picks).for_each(|n| {
-                    *multiplier.entry(n).or_insert(0) += 1;
-                });
+            (card.id+1..=card.id+right_picks).for_each(|n| {
+                *multiplier.entry(n).or_insert(0) += cards;
             });
 
             Some(cards)
