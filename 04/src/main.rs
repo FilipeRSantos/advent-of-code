@@ -1,5 +1,5 @@
+use std::collections::HashMap;
 use std::str::FromStr;
-
 #[derive(Debug)]
 struct CardNumber {
     numbers: Vec<u8>
@@ -58,15 +58,23 @@ impl Game {
 fn main() -> Result<(), std::io::Error> {
     let input = include_str!("input.txt");
 
+    let mut multiplier: HashMap<u32, u32> = HashMap::new();
+
     let values = input
         .lines()
         .map(|line| line.parse::<Game>().expect("Call the engineers"))
         .filter_map(|card| {
-            let right_picks = card.get_winning_numbers().iter().count();
+            let right_picks = card.get_winning_numbers().iter().count() as u32;
+            let cards = multiplier.get(&card.id).unwrap_or(&0) + 1;
 
-            if right_picks > 0 { Some(right_picks as u32) } else { None }
+            (1..=cards).for_each(|_| {
+                (card.id+1..=card.id+right_picks).for_each(|n| {
+                    *multiplier.entry(n).or_insert(0) += 1;
+                });
+            });
+
+            Some(cards)
         })
-        .map(|correct_guesses| u32::pow(2, correct_guesses - 1))
         .collect::<Vec<_>>();
 
     let total: u32 = values.into_iter().sum();
