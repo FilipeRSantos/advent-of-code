@@ -5,10 +5,6 @@ struct Race {
     current_record: usize,
 }
 
-struct Races {
-    records: Vec<Race>,
-}
-
 impl Race {
 
     fn get_distance_with(&self, hold_time: usize) -> usize {
@@ -20,52 +16,38 @@ impl Race {
     }
 }
 
-impl FromStr for Races {
+impl FromStr for Race {
     type Err = ();
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
 
         let mut iterator = s.lines();
 
-        let times = parse_data(&mut iterator).into_iter();
-        let mut distances = parse_data(&mut iterator).into_iter();
+        let duration = parse_data(&mut iterator);
+        let current_record = parse_data(&mut iterator);
 
-        Ok(Races {
-            records: times.map(|time| {
-                                Race {
-                                    duration: time,
-                                    current_record: distances.next().expect("Should have same number of elements"),
-                                }
-                            })
-                            .collect::<Vec<_>>(),
+        Ok(Race {
+            duration,
+            current_record,
         })
     }
 }
 
-fn parse_data(lines: &mut Lines) -> Vec<usize> {
+fn parse_data(lines: &mut Lines) -> usize {
     lines.next().expect("Should not be empty")[9..].split(':')
         .last()
         .expect("Should not be empty:")
         .trim()
-        .split_ascii_whitespace()
-        .map(|value| value.parse().expect("Should be a valid number")).collect::<Vec<_>>()
+        .replace(" ", "")
+        .parse::<usize>().expect("Should be a valid number")
 }
 
 fn main() -> Result<(), std::io::Error> {
     let input = include_str!("input.txt");
+    let race = input.parse::<Race>().expect("Should be a valid input");
+    let ways_to_beat_record = race.get_margin_of_error().iter().count();
 
-    let races = input.parse::<Races>().expect("Should be a valid input");
-    let mut product: usize = 1;
-
-    races.records.iter().for_each(|race| {
-        let ways_to_beat_record = race.get_margin_of_error().iter().count();
-
-        if ways_to_beat_record > 0 {
-            product *= ways_to_beat_record;
-        }
-    });
-
-    println!("{:?}", product);
+    println!("{:?}", ways_to_beat_record);
 
     Ok(())
 }
