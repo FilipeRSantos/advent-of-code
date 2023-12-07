@@ -1,7 +1,8 @@
 use std::collections::HashMap;
 use std::str::{FromStr};
+use crate::HandType::{FiveOfAKind, FourOfAKind, FullHouse, HighCard, OnePair, ThreeOfAKind, TwoPair};
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 enum HandType {
     FiveOfAKind = 7,
     FourOfAKind = 6,
@@ -27,27 +28,48 @@ struct WeightedHand {
 impl PokerHand {
     fn get_figure(&self) -> HandType {
         let mut values = HashMap::new();
-        self.cards.iter().for_each(|card| {
+        let joker_amount = self.cards.iter().filter(|card| **card == 1).count();
+
+        self.cards.iter().filter(|card| **card != 1).for_each(|card| {
            *values.entry(*card as usize).or_insert(0) += 1;
         });
 
-        match values.len() {
-            1 => HandType::FiveOfAKind,
-            2 => if values.iter().any(|(_, value)| *value == 3) { HandType::FullHouse } else { HandType::FourOfAKind },
-            3 =>
-                if values.iter().any(|(_, value)| *value == 3) {
-                    if values.iter().any(|(_, value)| *value == 1) { HandType::ThreeOfAKind } else { HandType::FullHouse }
-                } else { HandType::TwoPair },
-            4 => if values.iter().any(|(_, value)| *value == 2) { HandType::OnePair } else { HandType::HighCard },
-            _ => HandType::HighCard
+        let mut current_figure = HandType::HighCard;
+        values.iter().for_each(|(_, size)| {
+            if *size != 1 {
+                current_figure = match size {
+                    5 => FiveOfAKind,
+                    4 => FourOfAKind,
+                    3 => if current_figure == OnePair { FullHouse } else { ThreeOfAKind },
+                    2 => if current_figure == ThreeOfAKind { FullHouse }
+                            else if current_figure == OnePair { TwoPair }
+                            else { OnePair },
+                    _ => panic!("Should not be here")
+                };
+            }
+
+        });
+
+        for _ in 0..joker_amount {
+            current_figure = match current_figure {
+                HighCard => OnePair,
+                OnePair => ThreeOfAKind,
+                TwoPair => FullHouse,
+                ThreeOfAKind => FourOfAKind,
+                FullHouse => FourOfAKind,
+                FourOfAKind => FiveOfAKind,
+                FiveOfAKind => FiveOfAKind,
+            };
         }
+
+        current_figure
     }
 
     fn get_hand_weight(&self) -> usize {
         let mut multiplier = 100000000;
-        let multiplier_type = self.get_figure() as usize;
+        let current_figure = self.get_figure();
 
-        self.cards.iter().fold(multiplier_type * multiplier * 100, |mut state, x| {
+        self.cards.iter().fold(current_figure as usize * multiplier * 100, |mut state, x| {
             state += x * multiplier;
 
             multiplier /= 100;
@@ -67,7 +89,6 @@ impl FromStr for PokerHand {
                     'A' => 14,
                     'K' => 13,
                     'Q' => 12,
-                    'J' => 11,
                     'T' => 10,
                     '9' => 9,
                     '8' => 8,
@@ -77,6 +98,7 @@ impl FromStr for PokerHand {
                     '4' => 4,
                     '3' => 3,
                     '2' => 2,
+                    'J' => 1,
                     _ => panic!("{} should not exist", char)
                 }
             ).collect::<Vec<_>>(),
