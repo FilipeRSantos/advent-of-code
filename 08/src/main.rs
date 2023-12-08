@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use std::str::{FromStr};
+use num::Integer;
 
 #[derive(Debug, PartialEq)]
 enum Instructions {
@@ -7,37 +7,15 @@ enum Instructions {
     Right
 }
 
-#[derive(Debug, Eq, PartialEq, Hash, Copy, Clone)]
-struct Coords {
-    coord: u32,
-}
-
-impl FromStr for Coords {
-    type Err = ();
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(Coords {
-            coord: s.chars().fold(0, |mut state, char| {
-                state *= 100;
-
-                state += char as u32;
-
-                state
-            })
-        })
-    }
-}
-
 #[derive(Debug)]
-struct Map {
+struct Map<'a> {
     directions: Vec<Instructions>,
-    coords: HashMap<Coords, (Coords, Coords)>,
+    coords: HashMap<&'a str, (&'a str, &'a str)>,
 }
 
-impl FromStr for Map {
-    type Err = ();
+impl<'a> Map<'a> {
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
+    fn new(s: &str) -> Map {
         let mut lines = s.lines();
         let mut coords = HashMap::new();
 
@@ -48,46 +26,61 @@ impl FromStr for Map {
         lines.next();
 
         lines.for_each(|line| {
-            let start = line[0..3].parse::<Coords>().unwrap();
-            let left = line[7..10].parse::<Coords>().unwrap();
-            let right = line[12..15].parse::<Coords>().unwrap();
+            let start = &line[0..3];
+            let left = &line[7..10];
+            let right = &line[12..15];
 
             coords.insert(start, (left, right));
         });
 
-        Ok(Map{
+        Map{
             directions,
             coords
-        })
+        }
     }
-}
 
-impl Map {
-    fn get_steps(&self) -> usize {
-        let mut current_position = "AAA".parse::<Coords>().unwrap();
-        let target_position = "ZZZ".parse::<Coords>().unwrap();
-        let mut steps: usize = 0;
+    fn get_steps(&self) -> u128 {
+        let mut steps: u128 = 0;
+        let mut all_arrived = false;
 
-        while current_position != target_position {
+        let mut current_positions = self.coords.iter().filter_map(|(coord, _)| {
+            if coord.ends_with('A') { Some(coord) } else { None }
+        }).collect::<Vec<_>>();
+
+        let mut destinations = vec![];
+
+        while current_positions.len() > 0 {
             self.directions.iter().for_each(|i| {
+                all_arrived = true;
                 steps += 1;
 
-                let coords = self.coords.get(&current_position).expect("Should not be empty");
-                current_position = if *i == Instructions::Left { coords.0 } else { coords.1 };
+                current_positions = current_positions.iter().filter_map(|src| {
+                    let coords = self.coords.get(*src).expect("Should not be empty");
+                    let dst = if *i == Instructions::Left { &coords.0 } else { &coords.1 };
 
-                if current_position == target_position {
-                    return;
-                }
+                    if dst.ends_with('Z') {
+                        destinations.push(steps);
+                        return None;
+                    } else {
+                        return Some(dst);
+                    }
+                }).collect();
             });
         }
 
-        steps
+        destinations.iter()
+            .fold(*destinations.first().unwrap(), |mut acc, current| {
+                acc = acc.lcm(current);
+                acc
+            })
     }
+
+
 }
 
 fn main() -> Result<(), std::io::Error> {
     let input = include_str!("input.txt");
-    let map = input.parse::<Map>().expect("Should be a valid input");
+    let map = Map::new(input);
 
     println!("{:?}", map.get_steps());
 
