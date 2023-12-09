@@ -30,17 +30,17 @@ fn main() -> Result<(), std::io::Error> {
                             .map(|value| value.parse::<i32>().expect("Should be a valid number"))
                             .collect::<Vec<_>>();
 
-        let mut last_values = vec![];
-        last_values.push(*values.last().unwrap());
+        let mut first_values = vec![];
+        first_values.push(*values.first().unwrap());
 
         let mut current_values = values;
         while let Some(value) = check_current_line(&current_values) {
-            last_values.push(*value.last().unwrap());
+            first_values.push(*value.first().unwrap());
             current_values = value;
         }
 
-        last_values.iter().rev().fold(0, |mut acc, current| {
-            acc = acc + current;
+        first_values.iter().rev().fold(0, |mut acc, current| {
+            acc = current - acc;
             acc
         })
     }).sum::<i32>();
