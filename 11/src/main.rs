@@ -1,12 +1,6 @@
 use std::cmp::{max, min};
 
 fn main() -> Result<(), std::io::Error> {
-
-    //parse galaxies
-    //collect all rows and columns without galaxies
-    //save it to offset calculations
-    //loop trough all galaxies and cal pos - pos
-
     let input = include_str!("input.txt");
     let mut galaxies = vec![];
 
@@ -29,6 +23,7 @@ fn main() -> Result<(), std::io::Error> {
             .collect::<Vec<_>>();
 
     let mut acc = 0;
+    const MULTIPLIER: usize = 1000000 - 1;
     for (index, current) in galaxies.iter().enumerate() {
         let other_galaxies = galaxies.iter().skip(index+1);
         for (_, target) in other_galaxies.into_iter().enumerate() {
@@ -38,10 +33,12 @@ fn main() -> Result<(), std::io::Error> {
             let end_column = max(current.1, target.1);
 
             let offset_columns = empty_columns.iter()
-                .filter(|column| start_column <= **column && **column <= end_column).count();
+                .filter(|column| start_column < **column && **column < end_column)
+                .count() * MULTIPLIER;
 
             let offset_rows = empty_rows.iter()
-                .filter(|row| start_row <= **row && **row <= end_row).count();
+                .filter(|row| start_row < **row && **row < end_row)
+                .count() * MULTIPLIER;
 
             let distance = (end_row - start_row) + (end_column - start_column) + offset_columns + offset_rows;
             acc += distance;
