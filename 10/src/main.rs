@@ -58,21 +58,20 @@ fn main() -> Result<(), std::io::Error> {
             acc
         });
 
-        //TODO: See bug in point (56,72), which was marked as outside
+        //TODO: See bug in point (99,71)(97,104), which was marked as outside
 
         for row in 0..height {
             for column in 0..width {
                 let is_loop = steps[row][column] >= 0;
                 let char = match directions[row][column] {
-                        'F' => if is_loop { '┌' } else { ' ' },
-                        'L' => if is_loop { '└' } else { ' ' },
-                        '7' => if is_loop { '┐' } else { ' ' },
-                        'J' => if is_loop { '┘' } else { ' ' },
-                        '-' => if is_loop { '─' } else { ' ' },
-                        '|' => if is_loop { '│' } else { ' ' },
+                        'F' => if is_loop { '┏' } else { ' ' },
+                        'L' => if is_loop { '┗' } else { ' ' },
+                        '7' => if is_loop { '┓' } else { ' ' },
+                        'J' => if is_loop { '┛' } else { ' ' },
+                        '-' => if is_loop { '━' } else { ' ' },
+                        '|'|'S' => if is_loop { '┃' } else { ' ' },
                         '=' => '.',
-                        '.' => ' ',
-                        _ => directions[row][column]
+                        _ => ' ',
                     };
 
                 print!("{}", char)
@@ -134,7 +133,7 @@ fn fill_loop(steps: &Vec<Vec<i32>>, directions: &mut Vec<Vec<char>>, (y, x): (us
             '7' => if from_bottom { (y, x-1) } else { (y+1, x) },
             '-' => if from_left { (y, x+1) } else { (y, x-1) },
             '|' => if from_bottom { (y-1, x) } else { (y+1, x) },
-            'S' => (y-1, x),
+            'S' => (y+1, x),
             _ => panic!("{}", current_symbol),
         };
 
