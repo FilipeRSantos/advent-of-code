@@ -28,6 +28,10 @@ func main() {
 
 func runStep1(input string) int {
 	left, right := parse(input)
+
+	slices.Sort(left)
+	slices.Sort(right)
+
 	sum := 0
 	for i := 0; i < len(left); i++ {
 		sum += maths.Abs(left[i] - right[i])
@@ -37,32 +41,22 @@ func runStep1(input string) int {
 
 func runStep2(input string) int {
 	left, right := parse(input)
-	frequency := 0
-	current := 0
 	similarity := 0
-	lastRightIndex := 0
+	rightNumbers := map[int]int{}
+
+	for i := 0; i < len(right); i++ {
+		v, exists := rightNumbers[right[i]]
+		if !exists {
+			rightNumbers[right[i]] = 1
+		} else {
+			rightNumbers[right[i]] = v + 1
+		}
+	}
 
 	for i := 0; i < len(left); i++ {
-
-		if current == left[i] {
-			similarity += current * frequency
-			continue
-		} else {
-			current = left[i]
-			frequency = 0
+		if v, exists := rightNumbers[left[i]]; exists {
+			similarity += left[i] * v
 		}
-
-		for j := lastRightIndex; j < len(right); j++ {
-			if right[j] == current {
-				frequency++
-			} else if right[j] > current {
-				lastRightIndex = j
-				break
-			}
-		}
-
-		similarity += current * frequency
-		current = left[i]
 	}
 
 	return similarity
@@ -76,9 +70,6 @@ func parse(input string) ([]int, []int) {
 		lColumn = append(lColumn, maths.ParseInt(values[0]))
 		rColumn = append(rColumn, maths.ParseInt(values[len(values)-1]))
 	}
-
-	slices.Sort(lColumn)
-	slices.Sort(rColumn)
 
 	return lColumn, rColumn
 }
