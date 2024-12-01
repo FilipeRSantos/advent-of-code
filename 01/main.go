@@ -66,9 +66,9 @@ func parse(input string) ([]int, []int) {
 	var lColumn, rColumn []int
 
 	for _, line := range strings.Split(input, "\n") {
-		values := strings.Split(line, " ")
+		values := strings.Split(line, "   ")
 		lColumn = append(lColumn, maths.ParseInt(values[0]))
-		rColumn = append(rColumn, maths.ParseInt(values[len(values)-1]))
+		rColumn = append(rColumn, maths.ParseInt(values[1]))
 	}
 
 	return lColumn, rColumn
