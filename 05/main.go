@@ -30,21 +30,21 @@ func main() {
 	fmt.Println("Output: ", ans)
 }
 
-func (c *Config) areUpdatesValid(updateIndex, page, updatesIndex int) bool {
-	rules, exists := c.rules[page]
+func (c *Config) areUpdatesValid(updateIndex, updatesIndex int) (bool, int) {
+	rules, exists := c.rules[c.updates[updatesIndex][updateIndex]]
 	if !exists {
-		return true
+		return true, -1
 	}
 
 	for _, successor := range rules {
 		for j := updateIndex; j >= 0; j-- {
 			if c.updates[updatesIndex][j] == successor {
-				return false
+				return false, j
 			}
 		}
 	}
 
-	return true
+	return true, -1
 }
 
 func runStep1(input string) int {
@@ -54,8 +54,8 @@ func runStep1(input string) int {
 
 	for i, updates := range config.updates {
 		validRules := true
-		for j, page := range updates {
-			if !config.areUpdatesValid(j, page, i) {
+		for j := range updates {
+			if ok, _ := config.areUpdatesValid(j, i); !ok {
 				validRules = false
 				break
 			}
@@ -70,7 +70,43 @@ func runStep1(input string) int {
 }
 
 func runStep2(input string) int {
-	return 0
+	config := parse(input)
+
+	acc := 0
+
+	for i, updates := range config.updates {
+		adjusted := false
+
+		for {
+			invalidRulesPresent := false
+
+			for j := range updates {
+				ok, conflictingRule := config.areUpdatesValid(j, i)
+				if !ok {
+					a := config.updates[i][j]
+					b := config.updates[i][conflictingRule]
+
+					config.updates[i][j] = b
+					config.updates[i][conflictingRule] = a
+
+					invalidRulesPresent = true
+					adjusted = true
+				} else {
+					continue
+				}
+			}
+
+			if !invalidRulesPresent {
+				break
+			}
+		}
+
+		if adjusted {
+			acc += updates[len(updates)/2]
+		}
+	}
+
+	return acc
 }
 
 func parse(input string) *Config {
