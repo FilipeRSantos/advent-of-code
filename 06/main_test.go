@@ -23,7 +23,7 @@ func TestStep1SampleInput(t *testing.T) {
 }
 
 func TestStep2SampleInput(t *testing.T) {
-	expected := 123
+	expected := 6
 	count := runStep2(input)
 
 	if count != expected {
