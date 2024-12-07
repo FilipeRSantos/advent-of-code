@@ -191,12 +191,23 @@ func runStep1(input string) int {
 func runStep2(input string) int {
 	state := parse(input)
 
-	obstructions := 0
-	for coord, value := range state.state {
-		if value != Empty {
-			continue
+	// First we simulate the path the Guard will take to
+	// Only interact with tiles he is already crossing
+	for {
+		if !state.walk() {
+			break
 		}
+	}
 
+	var visitedCoords []Coordinates
+	for key, value := range state.state {
+		if value > 0 && key != state.guardStartAt {
+			visitedCoords = append(visitedCoords, key)
+		}
+	}
+
+	obstructions := 0
+	for _, coord := range visitedCoords {
 		state.state[coord] = Obstruction
 		if state.isStuckInLoop() {
 			obstructions++
