@@ -24,3 +24,19 @@ func Factorial(n int) int {
 
 	return n * Factorial(n-1)
 }
+
+func Max(n, m int) int {
+	if n < m {
+		return m
+	}
+
+	return n
+}
+
+func Min(n, m int) int {
+	if n > m {
+		return m
+	}
+
+	return n
+}
