@@ -24,26 +24,64 @@ func main() {
 	fmt.Println("Output: ", ans)
 }
 
-func runStep1(input string) int {
+type BlockInfo struct {
+	index  int
+	length int
+	fileId int
+}
+
+type Disk struct {
+	disk   []int
+	blocks []BlockInfo
+}
+
+func parse(input string) Disk {
 	files := slices.Repeat([]int{-1}, (len(input)-1)*9)
-	currentFileIndex := int64(0)
+	fileIndexes := make([]BlockInfo, (len(input)+1)/2)
+	currentFileIndex := 0
 
 	for i := 0; i < len(input); i++ {
-		curr, _ := strconv.ParseInt(string(input[i]), 10, 32)
+		curr, _ := strconv.Atoi(string(input[i]))
 
 		if i%2 != 0 {
 			currentFileIndex += curr
 			continue
 		}
 
+		fileIndexes[i/2] = BlockInfo{
+			index:  currentFileIndex,
+			length: curr,
+			fileId: i / 2,
+		}
 		for range curr {
 			files[currentFileIndex] = i / 2
 			currentFileIndex++
 		}
 	}
 
-	leftIndex := int64(0)
-	rightIndex := currentFileIndex - 1
+	return Disk{
+		disk:   files[:currentFileIndex],
+		blocks: fileIndexes,
+	}
+}
+
+func checkSum(disk []int) int {
+	checkSum := 0
+	for i, fileId := range disk {
+		if fileId == -1 {
+			continue
+		}
+		checkSum += i * fileId
+	}
+
+	return checkSum
+}
+
+func runStep1(input string) int {
+	files := parse(input).disk
+
+	leftIndex := 0
+	rightIndex := len(files) - 1
 	for {
 		if leftIndex >= rightIndex {
 			break
@@ -66,18 +104,47 @@ func runStep1(input string) int {
 		rightIndex--
 	}
 
-	checkSum := 0
-	for i, fileId := range files {
-		if fileId == -1 {
-			break
+	return checkSum(files)
+}
+
+func (d *Disk) findFreeSpaceWith(n int) int {
+	freeSpaceIndex := -1
+
+	for i := 0; i < len(d.disk); i++ {
+		if d.disk[i] != -1 {
+			freeSpaceIndex = -1
+			continue
 		}
 
-		checkSum += i * fileId
+		if freeSpaceIndex == -1 {
+			freeSpaceIndex = i
+		}
+
+		if i-freeSpaceIndex+1 >= n {
+			return freeSpaceIndex
+		}
 	}
 
-	return checkSum
+	return -1
 }
 
 func runStep2(input string) int {
-	return 0
+	disk := parse(input)
+	files := disk.disk
+
+	for j := len(disk.blocks) - 1; j >= 0; j-- {
+		currentFileSize := disk.blocks[j].length
+
+		firstFreeSpace := disk.findFreeSpaceWith(currentFileSize)
+		if firstFreeSpace == -1 || firstFreeSpace > disk.blocks[j].index {
+			continue
+		}
+
+		for n := range currentFileSize {
+			files[firstFreeSpace+n] = disk.blocks[j].fileId
+			files[disk.blocks[j].index+n] = -1
+		}
+	}
+
+	return checkSum(files)
 }
