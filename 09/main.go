@@ -107,10 +107,10 @@ func runStep1(input string) int {
 	return checkSum(files)
 }
 
-func (d *Disk) findFreeSpaceWith(n int) int {
+func (d *Disk) findFreeSpaceWith(n, max int) int {
 	freeSpaceIndex := -1
 
-	for i := 0; i < len(d.disk); i++ {
+	for i := 0; i < max; i++ {
 		if d.disk[i] != -1 {
 			freeSpaceIndex = -1
 			continue
@@ -135,8 +135,8 @@ func runStep2(input string) int {
 	for j := len(disk.blocks) - 1; j >= 0; j-- {
 		currentFileSize := disk.blocks[j].length
 
-		firstFreeSpace := disk.findFreeSpaceWith(currentFileSize)
-		if firstFreeSpace == -1 || firstFreeSpace > disk.blocks[j].index {
+		firstFreeSpace := disk.findFreeSpaceWith(currentFileSize, disk.blocks[j].index)
+		if firstFreeSpace == -1 {
 			continue
 		}
 
