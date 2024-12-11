@@ -13,16 +13,16 @@ import (
 
 //go:embed input.txt
 var s string
-var values map[int][]int
+var stones map[int]int
 
 func main() {
 	var ans int
 	args := os.Args[1]
 
 	if args == "1" {
-		ans = runStep1(s, 25)
+		ans = runStep(s, 25)
 	} else {
-		ans = runStep1(s, 75)
+		ans = runStep(s, 75)
 	}
 
 	fmt.Println("Output: ", ans)
@@ -42,40 +42,43 @@ func applyStoneRules(n int) []int {
 	}
 
 	return []int{n * 2024}
-
 }
 
-func computeNumber(n int) []int {
-	value, exists := values[n]
+func insertOrAdd(dic map[int]int, n, qtd int) {
+	value, exists := dic[n]
 	if !exists {
-		value = applyStoneRules(n)
-		values[n] = value
+		dic[n] = qtd
+	} else {
+		dic[n] = value + qtd
 	}
-	return value
 }
 
-func computeNSteps(n, steps int) int {
-
-	if steps <= 0 {
-		return 0
+func runStep(input string, blinks int) int {
+	previousStone := make(map[int]int, math.MaxUint16)
+	for _, stone := range parse(input) {
+		insertOrAdd(previousStone, stone, 1)
 	}
 
-	values := computeNumber(n)
-	newItems := len(values) - 1
-	for _, curr := range values {
-		newItems += computeNSteps(curr, steps-1)
+	for range blinks {
+		stones = make(map[int]int, math.MaxUint16)
+		for key, value := range previousStone {
+			t := applyStoneRules(key)
+			for _, x := range t {
+				insertOrAdd(stones, x, value)
+			}
+
+		}
+
+		previousStone = make(map[int]int, math.MaxUint16)
+		for key, value := range stones {
+			previousStone[key] = value
+		}
+
 	}
 
-	return newItems
-}
-
-func runStep1(input string, blinks int) int {
-	stones := parse(input)
-	values = make(map[int][]int, math.MaxUint16)
-
-	acc := len(stones)
-	for _, stone := range stones {
-		acc += computeNSteps(stone, blinks)
+	acc := 0
+	for _, value := range stones {
+		acc += value
 	}
 	return acc
 }
