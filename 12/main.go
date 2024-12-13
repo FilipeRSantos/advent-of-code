@@ -50,18 +50,14 @@ func (r *Region) getCost(part1 bool) int {
 		return len(r.plants) * r.getPerimeter()
 	}
 
-	corners := r.getCorners()
-	area := len(r.plants) / 4
-	price := area * corners
-	fmt.Printf("%s (area=%d) (corners=%d) $%d \n", string(r.plantType), area, corners, price)
-
-	return price
+	return len(r.plants) / 4 * r.getCorners()
 }
 
 func (r *Region) getCorners() int {
 
 	edges := r.getEdges()
 	corners := make(map[Coordinate][]Coordinate)
+	checkedEdges := make(map[Coordinate]bool)
 
 	for k, v := range edges {
 		for _, vv := range v {
@@ -75,11 +71,21 @@ func (r *Region) getCorners() int {
 	}
 
 	acc := 0
-	for _, edge := range r.getEdges() {
+	for _, edge := range edges {
 		switch len(edge) {
 		case 1:
 			continue
 		case 2:
+			for _, kk := range edge {
+				_, exist := checkedEdges[kk]
+				if exist {
+					acc--
+					continue
+				} else {
+					checkedEdges[kk] = true
+				}
+			}
+
 			acc++
 		default:
 			panic("Should never happen")
@@ -91,6 +97,7 @@ func (r *Region) getCorners() int {
 			acc++
 		}
 	}
+
 	return acc
 }
 
