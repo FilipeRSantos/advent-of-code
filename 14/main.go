@@ -11,6 +11,7 @@ import (
 
 //go:embed input.txt
 var s string
+var guardPos map[Coordinate]int
 
 type Coordinate struct {
 	x, y int
@@ -35,7 +36,7 @@ func main() {
 }
 
 func simulate(guards []Guard, width, height, steps int) int {
-	guardPos := make(map[Coordinate]int)
+	guardPos = make(map[Coordinate]int)
 	quadrants := make(map[int]int)
 
 	for i := range 3 {
@@ -106,20 +107,6 @@ func simulate(guards []Guard, width, height, steps int) int {
 
 	}
 
-	fmt.Printf("Steps: %d\n", steps)
-	for row := range height {
-		for column := range width {
-			value := guardPos[Coordinate{x: column + 1, y: row + 1}]
-
-			if value == 0 {
-				fmt.Print(".")
-			} else {
-				fmt.Printf("%d", value)
-			}
-		}
-		fmt.Printf("\n")
-	}
-
 	acc := 1
 
 	for _, g := range quadrants {
@@ -129,7 +116,6 @@ func simulate(guards []Guard, width, height, steps int) int {
 	return acc
 }
 
-// 500 < x
 func runStep1(input string, width, height int) int {
 	guards := parse(input)
 	return simulate(guards, width, height, 100)
@@ -137,7 +123,32 @@ func runStep1(input string, width, height int) int {
 }
 
 func runStep2(input string) int {
-	return 0
+	guards := parse(input)
+	steps := 0
+
+	for {
+		width := 101
+		height := 103
+		simulate(guards, width, height, steps)
+
+		fmt.Printf("Steps: %d\n", steps)
+		for row := range width {
+			for column := range height {
+				value := guardPos[Coordinate{x: column + 1, y: row + 1}]
+
+				if value == 0 {
+					fmt.Print(".")
+				} else {
+					fmt.Printf("%d", value)
+				}
+			}
+			fmt.Printf("\n")
+		}
+
+		fmt.Printf("\n\n\n\n")
+
+		steps++
+	}
 }
 
 func parse(input string) []Guard {
