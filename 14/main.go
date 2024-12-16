@@ -127,28 +127,50 @@ func runStep2(input string) int {
 	steps := 0
 
 	for {
+		steps++
+
 		width := 101
 		height := 103
 		simulate(guards, width, height, steps)
 
-		fmt.Printf("Steps: %d\n", steps)
-		for row := range width {
-			for column := range height {
-				value := guardPos[Coordinate{x: column + 1, y: row + 1}]
+		xSequence := 0
+		borderFound := false
+		for y := range height {
+			xSequence = 0
+			for x := range width {
+				_, ok := guardPos[Coordinate{x: x + 1, y: y + 1}]
+				if !ok {
+					xSequence = 0
+				}
 
-				if value == 0 {
-					fmt.Print(".")
-				} else {
-					fmt.Printf("%d", value)
+				xSequence++
+
+				if xSequence >= 10 {
+					borderFound = true
+					break
 				}
 			}
-			fmt.Printf("\n")
 		}
 
-		fmt.Printf("\n\n\n\n")
+		if borderFound {
+			fmt.Printf("Steps: %d\n", steps)
+			for row := range width {
+				for column := range height {
+					value := guardPos[Coordinate{x: column + 1, y: row + 1}]
 
-		steps++
+					if value == 0 {
+						fmt.Print(".")
+					} else {
+						fmt.Printf("%d", value)
+					}
+				}
+				fmt.Printf("\n")
+			}
+			break
+		}
 	}
+
+	return steps
 }
 
 func parse(input string) []Guard {
