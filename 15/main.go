@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 	"strings"
+
+	"github.com/FilipeRSantos/advent-of-code/maths"
 )
 
 //go:embed input.txt
@@ -20,12 +22,19 @@ const (
 	Robot = 2
 )
 
+const (
+	Top    = 0
+	Bottom = 1
+	Left   = 2
+	Right  = 3
+)
+
 type Coordinate struct {
 	x, y int
 }
 
 type Tile struct {
-	x, y, t, s int
+	x, y, t int
 }
 
 func main() {
@@ -41,108 +50,148 @@ func main() {
 	fmt.Println("Output: ", ans)
 }
 
-func (t *Tile) moveRight() bool {
+func (t *Tile) move(part1 bool, direction int) bool {
 	if t.t == Wall {
 		return false
 	}
 
-	coord := Coordinate{x: t.x + 1, y: t.y}
-	next, exists := tiles[coord]
-	if exists {
-		moved := next.moveRight()
-		if !moved {
-			return false
+	to, coords := t.getCoordsToCheck(part1, direction)
+
+	for i, coord := range coords {
+		next, exists := tiles[coord]
+		if exists {
+			moved := next.move(part1, direction)
+			if !moved {
+				return false
+			}
 		}
-	}
 
-	delete(tiles, Coordinate{x: t.x, y: t.y})
-	t.x = t.x + 1
-	tiles[coord] = *t
-
-	if t.t == Robot {
-		robotAt = coord
+		if i == len(coords)-1 {
+			delete(tiles, Coordinate{x: t.x, y: t.y})
+			switch direction {
+			case Top:
+				t.y = t.y - 1
+			case Bottom:
+				t.y = t.y + 1
+			case Left:
+				t.x = t.x - 1
+			case Right:
+				t.x = t.x + 1
+			}
+			tiles[to] = *t
+			if t.t == Robot {
+				robotAt = to
+			}
+		}
 	}
 
 	return true
 }
 
-func (t *Tile) moveLeft() bool {
-	if t.t == Wall {
-		return false
+func (t *Tile) getCoordsToCheck(part1 bool, direction int) (Coordinate, []Coordinate) {
+	var to Coordinate
+	var coords []Coordinate
+
+	switch direction {
+	case Top:
+		to = Coordinate{x: t.x, y: t.y - 1}
+	case Bottom:
+		to = Coordinate{x: t.x, y: t.y + 1}
+	case Left:
+		to = Coordinate{x: t.x - 1, y: t.y}
+	case Right:
+		to = Coordinate{x: t.x + 1, y: t.y}
 	}
 
-	coord := Coordinate{x: t.x - 1, y: t.y}
-	next, exists := tiles[coord]
-	if exists {
-		moved := next.moveLeft()
-		if !moved {
-			return false
+	if part1 {
+		return to, []Coordinate{to}
+	}
+
+	switch direction {
+	case Top:
+		if t.t != Robot {
+			coords = []Coordinate{{x: t.x - 1, y: t.y - 1}, {x: t.x + 1, y: t.y - 1}, to}
+		} else {
+			coords = []Coordinate{{x: t.x - 1, y: t.y - 1}, to}
 		}
+	case Bottom:
+		if t.t != Robot {
+			coords = []Coordinate{{x: t.x - 1, y: t.y + 1}, {x: t.x + 1, y: t.y + 1}, to}
+		} else {
+			coords = []Coordinate{{x: t.x - 1, y: t.y + 1}, to}
+		}
+	case Left:
+		coords = []Coordinate{{x: t.x - 2, y: t.y}, to}
+	case Right:
+		coords = []Coordinate{{x: t.x + 2, y: t.y}, to}
 	}
 
-	delete(tiles, Coordinate{x: t.x, y: t.y})
-	t.x = t.x - 1
-	tiles[coord] = *t
-
-	if t.t == Robot {
-		robotAt = coord
-	}
-
-	return true
+	return to, coords
 }
 
-func (t *Tile) moveTop() bool {
+func (t *Tile) canMove(direction int) bool {
 	if t.t == Wall {
 		return false
 	}
 
-	coord := Coordinate{x: t.x, y: t.y - 1}
-	next, exists := tiles[coord]
-	if exists {
-		moved := next.moveTop()
-		if !moved {
-			return false
+	canMoveFlag := 0
+	_, coords := t.getCoordsToCheck(false, direction)
+
+	for _, coord := range coords {
+		next, exists := tiles[coord]
+		if exists {
+			if next.canMove(direction) {
+				canMoveFlag++
+			}
+		} else {
+			canMoveFlag++
 		}
 	}
 
-	delete(tiles, Coordinate{x: t.x, y: t.y})
-	t.y = t.y - 1
-	tiles[coord] = *t
-
-	if t.t == Robot {
-		robotAt = coord
-	}
-
-	return true
-}
-
-func (t *Tile) moveBottom() bool {
-	if t.t == Wall {
-		return false
-	}
-
-	coord := Coordinate{x: t.x, y: t.y + 1}
-	next, exists := tiles[coord]
-	if exists {
-		moved := next.moveBottom()
-		if !moved {
-			return false
-		}
-	}
-
-	delete(tiles, Coordinate{x: t.x, y: t.y})
-	t.y = t.y + 1
-	tiles[coord] = *t
-
-	if t.t == Robot {
-		robotAt = coord
-	}
-
-	return true
+	return canMoveFlag == len(coords)
 }
 
 func runStep2(input string) int {
-	return 0
+	parse(input, false)
+
+	for _, command := range commands {
+		debug(false, command)
+
+		if command == '\n' {
+			continue
+		}
+
+		var direction int
+		guard := tiles[robotAt]
+		switch command {
+		case '<':
+			direction = Left
+		case '>':
+			direction = Right
+		case '^':
+			direction = Top
+		case 'v':
+			direction = Bottom
+		}
+		if guard.canMove(direction) {
+			guard.move(false, direction)
+		}
+	}
+	debug(false, ' ')
+
+	acc := 0
+	for _, tile := range tiles {
+		if tile.t != Box {
+			continue
+		}
+
+		distanceFromBottom := height - tile.y
+		distanceFromRight := width - tile.x + 1
+
+		acc += 100*maths.Min(distanceFromBottom, tile.y) + maths.Min(tile.x, distanceFromRight)
+	}
+
+	return acc
 }
 
 func runStep1(input string) int {
@@ -153,17 +202,19 @@ func runStep1(input string) int {
 			continue
 		}
 
+		var direction int
 		guard := tiles[robotAt]
 		switch command {
 		case '<':
-			guard.moveLeft()
+			direction = Left
 		case '>':
-			guard.moveRight()
+			direction = Right
 		case '^':
-			guard.moveTop()
+			direction = Top
 		case 'v':
-			guard.moveBottom()
+			direction = Bottom
 		}
+		guard.move(true, direction)
 	}
 
 	acc := 0
@@ -176,7 +227,6 @@ func runStep1(input string) int {
 	}
 
 	return acc
-
 }
 
 func parse(input string, part1 bool) {
@@ -187,11 +237,9 @@ func parse(input string, part1 bool) {
 	lines := strings.Split(sections[0], "\n")
 	height = len(lines)
 	width = len(lines[0])
-	loop := 1
 
 	if !part1 {
 		width *= 2
-		loop = 2
 	}
 
 	for y, line := range lines {
@@ -222,47 +270,65 @@ func parse(input string, part1 bool) {
 				robotAt = coord
 			}
 
-			for i := range loop {
-				coord.x = xx + i
-
-				tiles[coord] = Tile{
-					x: coord.x,
-					y: coord.y,
-					t: t,
-					s: i,
-				}
+			tiles[coord] = Tile{
+				x: coord.x,
+				y: coord.y,
+				t: t,
 			}
 		}
 	}
 	commands = sections[1]
 }
 
-func debug() {
-	fmt.Printf("\n")
-
+func debug(part1 bool, command rune) {
+	fmt.Printf("\n%s\n", string(command))
+	lastSymbol := -1
 	for y := range height {
 		for x := range width {
 			value, exits := tiles[Coordinate{x: x, y: y}]
 			if !exits {
-				fmt.Printf(".")
+				if lastSymbol == -1 {
+					fmt.Printf(".")
+				}
+
+				if !part1 {
+					if lastSymbol == Wall {
+						fmt.Printf("#")
+					}
+
+					if lastSymbol == Box {
+						fmt.Printf("]")
+					}
+
+					lastSymbol = -1
+				}
 				continue
 			}
 
 			switch value.t {
 			case Robot:
 				fmt.Printf("@")
+				lastSymbol = -1
 
 				if value.x != robotAt.x || value.y != robotAt.y {
 					panic("WEWEWeE")
 				}
 			case Box:
-				fmt.Printf("O")
+				if part1 {
+					fmt.Printf("O")
+				} else {
+					lastSymbol = Box
+					fmt.Printf("[")
+				}
 			case Wall:
+				if !part1 {
+					lastSymbol = Wall
+				}
 				fmt.Printf("#")
 			}
 		}
+		lastSymbol = -1
 		fmt.Printf("\n")
 	}
 	fmt.Printf("\n")
-
 }
