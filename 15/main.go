@@ -25,7 +25,7 @@ type Coordinate struct {
 }
 
 type Tile struct {
-	x, y, t int
+	x, y, t, s int
 }
 
 func main() {
@@ -146,11 +146,9 @@ func runStep2(input string) int {
 }
 
 func runStep1(input string) int {
-	parse(input)
+	parse(input, true)
 
 	for _, command := range commands {
-		// debug()
-
 		if command == '\n' {
 			continue
 		}
@@ -181,7 +179,7 @@ func runStep1(input string) int {
 
 }
 
-func parse(input string) {
+func parse(input string, part1 bool) {
 	sections := strings.Split(input, "\n\n")
 
 	tiles = make(map[Coordinate]Tile)
@@ -189,6 +187,12 @@ func parse(input string) {
 	lines := strings.Split(sections[0], "\n")
 	height = len(lines)
 	width = len(lines[0])
+	loop := 1
+
+	if !part1 {
+		width *= 2
+		loop = 2
+	}
 
 	for y, line := range lines {
 		for x, tile := range line {
@@ -196,7 +200,13 @@ func parse(input string) {
 				continue
 			}
 
-			coord := Coordinate{x, y}
+			xx := x
+
+			if !part1 {
+				xx *= 2
+			}
+
+			coord := Coordinate{xx, y}
 
 			var t int
 			if tile == '#' {
@@ -212,10 +222,15 @@ func parse(input string) {
 				robotAt = coord
 			}
 
-			tiles[coord] = Tile{
-				x: x,
-				y: y,
-				t: t,
+			for i := range loop {
+				coord.x = xx + i
+
+				tiles[coord] = Tile{
+					x: coord.x,
+					y: coord.y,
+					t: t,
+					s: i,
+				}
 			}
 		}
 	}
