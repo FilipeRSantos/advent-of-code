@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"os"
 	"strings"
-
-	"github.com/FilipeRSantos/advent-of-code/maths"
 )
 
 //go:embed input.txt
@@ -123,7 +121,11 @@ func (t *Tile) getCoordsToCheck(part1 bool, direction int) (Coordinate, []Coordi
 	case Left:
 		coords = []Coordinate{{x: t.x - 2, y: t.y}, to}
 	case Right:
-		coords = []Coordinate{{x: t.x + 2, y: t.y}, to}
+		if t.t != Robot {
+			coords = []Coordinate{{x: t.x + 2, y: t.y}, to}
+		} else {
+			coords = []Coordinate{to}
+		}
 	}
 
 	return to, coords
@@ -155,8 +157,6 @@ func runStep2(input string) int {
 	parse(input, false)
 
 	for _, command := range commands {
-		debug(false, command)
-
 		if command == '\n' {
 			continue
 		}
@@ -185,10 +185,7 @@ func runStep2(input string) int {
 			continue
 		}
 
-		distanceFromBottom := height - tile.y
-		distanceFromRight := width - tile.x + 1
-
-		acc += 100*maths.Min(distanceFromBottom, tile.y) + maths.Min(tile.x, distanceFromRight)
+		acc += 100*tile.y + tile.x
 	}
 
 	return acc
@@ -309,10 +306,6 @@ func debug(part1 bool, command rune) {
 			case Robot:
 				fmt.Printf("@")
 				lastSymbol = -1
-
-				if value.x != robotAt.x || value.y != robotAt.y {
-					panic("WEWEWeE")
-				}
 			case Box:
 				if part1 {
 					fmt.Printf("O")
