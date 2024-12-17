@@ -15,6 +15,7 @@ var maze map[Coordinate]bool
 var reindeerAt Coordinate
 var finishAt Coordinate
 var reindeerDirection int
+var visited map[Coordinate][]int
 
 const (
 	Top    = 0
@@ -25,10 +26,6 @@ const (
 
 type Coordinate struct {
 	x, y int
-}
-
-type Finish struct {
-	steps, turns int
 }
 
 func main() {
@@ -44,14 +41,17 @@ func main() {
 	fmt.Println("Output: ", ans)
 }
 
-func walkMaze(coordinate, previousCoordinate Coordinate, currentDirection int, path map[Coordinate]int, finishes map[Finish]bool) {
+func walkMaze(coordinate, previousCoordinate Coordinate, currentDirection int, path map[Coordinate]int, scores map[int]bool) {
+
+	turns := 0
+	for _, turn := range path {
+		turns += turn
+	}
+	score := turns*1000 + len(path)
 
 	if coordinate == finishAt {
-		turns := 0
-		for _, turn := range path {
-			turns += turn
-		}
-		finishes[Finish{steps: len(path), turns: turns}] = true
+		scores[score] = true
+		fmt.Printf("%d,", score)
 		return
 	}
 
@@ -59,19 +59,35 @@ func walkMaze(coordinate, previousCoordinate Coordinate, currentDirection int, p
 		if _, ok := maze[coordinate]; !ok {
 			return
 		}
+	} else {
+		visited = make(map[Coordinate][]int)
 	}
 
 	if _, ok := path[coordinate]; ok {
 		return
 	}
 
+	bestVisitedScore, hasVisited := visited[coordinate]
+	if hasVisited {
+		if bestVisitedScore[currentDirection] <= score {
+			return
+		}
+	} else {
+		visited[coordinate] = make([]int, 4)
+		for i := range 4 {
+			visited[coordinate][i] = math.MaxInt32
+		}
+	}
+
+	visited[coordinate][currentDirection] = score
+
 	coords := []struct {
 		coord     Coordinate
 		direction int
 	}{
 		{coord: Coordinate{x: coordinate.x + 1, y: coordinate.y}, direction: Right},
-		{coord: Coordinate{x: coordinate.x - 1, y: coordinate.y}, direction: Left},
 		{coord: Coordinate{x: coordinate.x, y: coordinate.y - 1}, direction: Top},
+		{coord: Coordinate{x: coordinate.x - 1, y: coordinate.y}, direction: Left},
 		{coord: Coordinate{x: coordinate.x, y: coordinate.y + 1}, direction: Bottom},
 	}
 
@@ -92,7 +108,7 @@ func walkMaze(coordinate, previousCoordinate Coordinate, currentDirection int, p
 		}
 		currentPath[coordinate] = turn
 
-		walkMaze(c.coord, coordinate, c.direction, currentPath, finishes)
+		walkMaze(c.coord, coordinate, c.direction, currentPath, scores)
 	}
 }
 
@@ -100,14 +116,12 @@ func runStep1(input string) int {
 	parse(input)
 
 	path := make(map[Coordinate]int)
-	finishes := make(map[Finish]bool)
-	walkMaze(reindeerAt, reindeerAt, reindeerDirection, path, finishes)
+	scores := make(map[int]bool)
+	walkMaze(reindeerAt, reindeerAt, reindeerDirection, path, scores)
 
-	score := math.MaxInt16
+	score := math.MaxInt32
 
-	for finish := range finishes {
-		x := finish.turns*1000 + finish.steps
-
+	for x := range scores {
 		if x < score {
 			score = x
 		}
@@ -122,7 +136,9 @@ func runStep2(input string) int {
 
 func parse(input string) {
 	maze = make(map[Coordinate]bool)
-	for y, line := range strings.Split(input, "\n") {
+	lines := strings.Split(input, "\n")
+
+	for y, line := range lines {
 		for x, tile := range line {
 			coords := Coordinate{x: x, y: y}
 			switch tile {
