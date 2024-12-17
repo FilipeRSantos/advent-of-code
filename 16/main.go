@@ -6,6 +6,8 @@ import (
 	"math"
 	"os"
 	"strings"
+
+	"github.com/FilipeRSantos/advent-of-code/maths"
 )
 
 //go:embed input.txt
@@ -16,6 +18,7 @@ var reindeerAt Coordinate
 var finishAt Coordinate
 var reindeerDirection int
 var visited map[Coordinate][]int
+var bestScoreFound int
 
 const (
 	Top    = 0
@@ -41,7 +44,12 @@ func main() {
 	fmt.Println("Output: ", ans)
 }
 
-func walkMaze(coordinate, previousCoordinate Coordinate, currentDirection int, path map[Coordinate]int, scores map[int]bool) {
+func walkMaze(coordinate, previousCoordinate Coordinate, currentDirection int, path map[Coordinate]int, scores map[int]map[Coordinate]bool) {
+
+	if coordinate == previousCoordinate {
+		bestScoreFound = math.MaxInt32
+		visited = make(map[Coordinate][]int)
+	}
 
 	turns := 0
 	for _, turn := range path {
@@ -49,9 +57,21 @@ func walkMaze(coordinate, previousCoordinate Coordinate, currentDirection int, p
 	}
 	score := turns*1000 + len(path)
 
+	if score > bestScoreFound {
+		return
+	}
+
 	if coordinate == finishAt {
-		scores[score] = true
-		fmt.Printf("%d,", score)
+		bestScoreFound = maths.Min(bestScoreFound, score)
+
+		_, exists := scores[score]
+		if !exists {
+			scores[score] = make(map[Coordinate]bool)
+		}
+
+		for c := range path {
+			scores[score][c] = true
+		}
 		return
 	}
 
@@ -59,8 +79,6 @@ func walkMaze(coordinate, previousCoordinate Coordinate, currentDirection int, p
 		if _, ok := maze[coordinate]; !ok {
 			return
 		}
-	} else {
-		visited = make(map[Coordinate][]int)
 	}
 
 	if _, ok := path[coordinate]; ok {
@@ -69,7 +87,7 @@ func walkMaze(coordinate, previousCoordinate Coordinate, currentDirection int, p
 
 	bestVisitedScore, hasVisited := visited[coordinate]
 	if hasVisited {
-		if bestVisitedScore[currentDirection] <= score {
+		if bestVisitedScore[currentDirection] < score {
 			return
 		}
 	} else {
@@ -116,7 +134,7 @@ func runStep1(input string) int {
 	parse(input)
 
 	path := make(map[Coordinate]int)
-	scores := make(map[int]bool)
+	scores := make(map[int]map[Coordinate]bool)
 	walkMaze(reindeerAt, reindeerAt, reindeerDirection, path, scores)
 
 	score := math.MaxInt32
@@ -131,7 +149,21 @@ func runStep1(input string) int {
 }
 
 func runStep2(input string) int {
-	return 0
+	parse(input)
+
+	path := make(map[Coordinate]int)
+	scores := make(map[int]map[Coordinate]bool)
+	walkMaze(reindeerAt, reindeerAt, reindeerDirection, path, scores)
+
+	score := math.MaxInt32
+
+	for x := range scores {
+		if x < score {
+			score = x
+		}
+	}
+
+	return len(scores[score]) + 1
 }
 
 func parse(input string) {
