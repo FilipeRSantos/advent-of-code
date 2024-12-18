@@ -4,7 +4,6 @@ import (
 	_ "embed"
 	"fmt"
 	"math"
-	"os"
 	"strings"
 
 	"github.com/FilipeRSantos/advent-of-code/maths"
@@ -32,16 +31,9 @@ type Coordinate struct {
 }
 
 func main() {
-	var ans int
-	args := os.Args[1]
+	ans1, ans2 := solve(s)
 
-	if args == "1" {
-		ans = runStep1(s)
-	} else {
-		ans = runStep2(s)
-	}
-
-	fmt.Println("Output: ", ans)
+	fmt.Printf("Part1: %d\nPart2: %d\n", ans1, ans2)
 }
 
 func walkMaze(coordinate, previousCoordinate Coordinate, currentDirection int, path map[Coordinate]int, scores map[int]map[Coordinate]bool) {
@@ -130,7 +122,7 @@ func walkMaze(coordinate, previousCoordinate Coordinate, currentDirection int, p
 	}
 }
 
-func runStep1(input string) int {
+func solve(input string) (int, int) {
 	parse(input)
 
 	path := make(map[Coordinate]int)
@@ -145,25 +137,7 @@ func runStep1(input string) int {
 		}
 	}
 
-	return score
-}
-
-func runStep2(input string) int {
-	parse(input)
-
-	path := make(map[Coordinate]int)
-	scores := make(map[int]map[Coordinate]bool)
-	walkMaze(reindeerAt, reindeerAt, reindeerDirection, path, scores)
-
-	score := math.MaxInt32
-
-	for x := range scores {
-		if x < score {
-			score = x
-		}
-	}
-
-	return len(scores[score]) + 1
+	return score, len(scores[score]) + 1
 }
 
 func parse(input string) {

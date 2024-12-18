@@ -1,6 +1,7 @@
 package maths
 
 import (
+	"math"
 	"strconv"
 )
 
@@ -41,9 +42,6 @@ func Min(n, m int) int {
 	return n
 }
 
-// https://stackoverflow.com/a/43945812
-func Divmod(numerator, denominator int64) (quotient, remainder int64) {
-	quotient = numerator / denominator // integer division, decimals are truncated
-	remainder = numerator % denominator
-	return
+func Pow(x, y int) int {
+	return int(math.Pow(float64(x), float64(y)))
 }
