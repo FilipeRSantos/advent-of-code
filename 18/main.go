@@ -135,6 +135,8 @@ func runStep1(input string, size, corrupted int) int {
 func runStep2(input string, size, corrupted int) string {
 	parse(input)
 
+	var coordAdded Coordinate
+
 	startAt := corrupted + 1
 	for {
 		playerAt = Coordinate{0, 0}
@@ -148,16 +150,52 @@ func runStep2(input string, size, corrupted int) string {
 			break
 		}
 
-		startAt++
-	}
+		for {
+			for k, v := range maze {
+				if v == startAt-1 {
+					coordAdded = k
+					break
+				}
+			}
 
-	for k, v := range maze {
-		if v == startAt-1 {
-			return fmt.Sprintf("%d,%d", k.x, k.y)
+			i := 0
+			pathsFree := make([]bool, len(scores))
+			for i := range pathsFree {
+				pathsFree[i] = true
+			}
+
+			for _, v := range scores {
+				pathFree := true
+				for kk := range v {
+					if coordAdded == kk {
+						pathFree = false
+						break
+					}
+				}
+
+				if pathsFree[i] {
+					pathsFree[i] = pathFree
+				}
+				i++
+			}
+
+			solveMazeAgain := true
+			for _, v := range pathsFree {
+				if v {
+					solveMazeAgain = false
+				}
+			}
+
+			startAt++
+
+			if solveMazeAgain {
+				break
+			}
 		}
+
 	}
 
-	panic("Should not be here")
+	return fmt.Sprintf("%d,%d", coordAdded.x, coordAdded.y)
 }
 
 func parse(input string) {
