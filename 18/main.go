@@ -4,6 +4,7 @@ import (
 	_ "embed"
 	"fmt"
 	"math"
+	"os"
 	"strings"
 
 	"github.com/FilipeRSantos/advent-of-code/maths"
@@ -24,13 +25,16 @@ type Coordinate struct {
 }
 
 func main() {
-	ans1, ans2 := solve(s, 71, 1024)
+	args := os.Args[1]
 
-	fmt.Printf("Part1: %d\nPart2: %d\n", ans1, ans2)
+	if args == "1" {
+		fmt.Println("Output: ", runStep1(s, 71, 1024))
+	} else {
+		fmt.Println("Output: ", runStep2(s, 71, 1024))
+	}
 }
 
 func walkMaze(coordinate, previousCoordinate Coordinate, path map[Coordinate]bool, scores map[int]map[Coordinate]bool) {
-
 	if coordinate == previousCoordinate {
 		bestScoreFound = math.MaxInt32
 		visited = make(map[Coordinate]int)
@@ -107,7 +111,7 @@ func walkMaze(coordinate, previousCoordinate Coordinate, path map[Coordinate]boo
 	}
 }
 
-func solve(input string, size, corrupted int) (int, int) {
+func runStep1(input string, size, corrupted int) int {
 	parse(input)
 	playerAt = Coordinate{0, 0}
 	finishAt = Coordinate{size - 1, size - 1}
@@ -125,7 +129,35 @@ func solve(input string, size, corrupted int) (int, int) {
 		}
 	}
 
-	return score, len(scores[score]) + 1
+	return score
+}
+
+func runStep2(input string, size, corrupted int) string {
+	parse(input)
+
+	startAt := corrupted + 1
+	for {
+		playerAt = Coordinate{0, 0}
+		finishAt = Coordinate{size - 1, size - 1}
+		corruptedQtd = startAt
+		path := make(map[Coordinate]bool)
+		scores := make(map[int]map[Coordinate]bool)
+		walkMaze(playerAt, playerAt, path, scores)
+
+		if (len(scores)) == 0 {
+			break
+		}
+
+		startAt++
+	}
+
+	for k, v := range maze {
+		if v == startAt-1 {
+			return fmt.Sprintf("%d,%d", k.x, k.y)
+		}
+	}
+
+	panic("Should not be here")
 }
 
 func parse(input string) {
