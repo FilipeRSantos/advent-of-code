@@ -89,3 +89,26 @@ Program: 4,0`
 		t.Errorf(`TestSample5 got %d, expected %d`, b, expected)
 	}
 }
+
+func TestStep2SampleInput(t *testing.T) {
+	var tests = []struct {
+		input    string
+		expected int
+	}{
+		{`Register A: 2024
+Register B: 0
+Register C: 0
+
+Program: 0,3,5,4,3,0`, 117440},
+	}
+
+	for i, tt := range tests {
+		testname := fmt.Sprintf("%d", i)
+		t.Run(testname, func(t *testing.T) {
+			ans := runStep2(tt.input)
+			if ans != tt.expected {
+				t.Errorf(`TestStep1SampleInput got %d, expected %d`, ans, tt.expected)
+			}
+		})
+	}
+}

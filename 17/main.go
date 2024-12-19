@@ -7,6 +7,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/FilipeRSantos/advent-of-code/maths"
 )
@@ -17,11 +18,13 @@ var a, b, c int
 var out chan int
 var numbers []int
 var pointer int
+var outputIndex int
 
 const (
-	Success = 0
-	Halted  = 1
-	Jump    = 2
+	Corrupted = -1
+	Success   = 0
+	Halted    = 1
+	Jump      = 2
 )
 
 func main() {
@@ -31,7 +34,7 @@ func main() {
 	if args == "1" {
 		ans = runStep1(s)
 	} else {
-		ans = runStep2(s)
+		ans = strconv.Itoa(runStep2(s))
 	}
 
 	fmt.Println("Output: ", ans)
@@ -62,9 +65,11 @@ func adv(operand int) int {
 	return a / (maths.Pow(2, getComboOperator(operand)))
 }
 
-func execute() int {
+func execute(part1 bool) int {
 	if pointer >= len(numbers)-1 {
-		close(out)
+		if part1 {
+			close(out)
+		}
 		return Halted
 	}
 
@@ -89,8 +94,17 @@ func execute() int {
 	case 4:
 		b = b ^ c
 	case 5:
-		v := getComboOperator(operand)
-		out <- v % 8
+		v := getComboOperator(operand) % 8
+
+		if part1 {
+			out <- v
+		} else {
+			if numbers[outputIndex] != v {
+				return Corrupted
+			}
+			outputIndex++
+		}
+
 	case 6:
 		b = adv(operand)
 	case 7:
@@ -100,16 +114,18 @@ func execute() int {
 	return Success
 }
 
-func process() {
+func process(part1 bool) bool {
 	for {
-		status := execute()
+		status := execute(part1)
 		switch status {
 		case Success:
 			pointer += 2
 		case Halted:
-			return
+			return outputIndex == len(numbers)
 		case Jump:
 			continue
+		case Corrupted:
+			return false
 		}
 	}
 }
@@ -119,7 +135,7 @@ func runStep1(input string) string {
 	pointer = 0
 	parse(input)
 
-	go process()
+	go process(true)
 
 	separator := ""
 	var buffer bytes.Buffer
@@ -132,8 +148,36 @@ func runStep1(input string) string {
 	return buffer.String()
 }
 
-func runStep2(input string) string {
-	return "0"
+func runStep2(input string) int {
+	parse(input)
+
+	initialA := 0
+	originalB := b
+	originalC := c
+
+	logProgress := func() {
+		for range time.Tick(time.Second * 5) {
+			fmt.Println(initialA)
+		}
+	}
+
+	go logProgress()
+
+	for {
+		a = initialA
+		b = originalB
+		c = originalC
+		pointer = 0
+		outputIndex = 0
+
+		if process(false) {
+			break
+		}
+
+		initialA++
+	}
+
+	return initialA
 }
 
 func parse(input string) {
